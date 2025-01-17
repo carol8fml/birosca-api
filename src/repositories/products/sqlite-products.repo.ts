@@ -122,4 +122,57 @@ export class SQLiteProductsRepo implements ProductsRepository {
       });
     });
   }
+
+  async filter(criteria: {
+    category?: string;
+    minQuantity?: number;
+    maxQuantity?: number;
+    minPrice?: number;
+    maxPrice?: number;
+  }): Promise<Product[]> {
+    const db = this.dbConfig.getDatabase();
+    let query = `SELECT * FROM products WHERE 1=1`;
+    const params: any[] = [];
+
+    if (criteria.category) {
+      query += ` AND category = ?`;
+      params.push(criteria.category);
+    }
+    if (criteria.minQuantity !== undefined) {
+      query += ` AND quantity >= ?`;
+      params.push(criteria.minQuantity);
+    }
+    if (criteria.maxQuantity !== undefined) {
+      query += ` AND quantity <= ?`;
+      params.push(criteria.maxQuantity);
+    }
+    if (criteria.minPrice !== undefined) {
+      query += ` AND price >= ?`;
+      params.push(criteria.minPrice);
+    }
+    if (criteria.maxPrice !== undefined) {
+      query += ` AND price <= ?`;
+      params.push(criteria.maxPrice);
+    }
+
+    return new Promise((resolve, reject) => {
+      db.all(query, params, (err, rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          const products = rows.map(
+            (row) =>
+              new Product(
+                (row as ProductRow).id,
+                (row as ProductRow).name,
+                (row as ProductRow).category,
+                (row as ProductRow).price,
+                (row as ProductRow).quantity,
+              ),
+          );
+          resolve(products);
+        }
+      });
+    });
+  }
 }

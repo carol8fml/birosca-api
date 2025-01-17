@@ -6,6 +6,7 @@ import { ProductsController } from './api/products/products.controller';
 /** Use Cases */
 import { ListProductsUseCase } from './usecases/products/list-products.usecase';
 import { AddProductUseCase } from './usecases/products/add-product.usecase';
+import { FilterProductsUseCase } from './usecases/products/filter-products.usecase';
 
 /** Repositories */
 import { SQLiteProductsRepo } from './repositories/products/sqlite-products.repo';
@@ -21,6 +22,7 @@ import { DatabaseConfig } from './config/database.config';
     { provide: 'ProductsRepository', useClass: SQLiteProductsRepo },
     ListProductsUseCase,
     AddProductUseCase,
+    FilterProductsUseCase,
   ],
 })
 export class AppModule {}

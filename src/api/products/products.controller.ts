@@ -1,12 +1,14 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 /** Use Cases */
 import { ListProductsUseCase } from '../../usecases/products/list-products.usecase';
 import { AddProductUseCase } from '../../usecases/products/add-product.usecase';
+import { FilterProductsUseCase } from '../../usecases/products/filter-products.usecase';
 
 /** DTO */
 import { CreateProductDto } from './dto/create-product.dto';
+import { FilterProductsDto } from './dto/filter-products.dto';
 
 @Controller('products')
 @ApiTags('Products')
@@ -14,6 +16,7 @@ export class ProductsController {
   constructor(
     private readonly listProductsUseCase: ListProductsUseCase,
     private readonly addProductUseCase: AddProductUseCase,
+    private readonly filterProductsUseCase: FilterProductsUseCase,
   ) {}
 
   @Get()
@@ -47,5 +50,15 @@ export class ProductsController {
         this.addProductUseCase.execute(productData),
       ),
     );
+  }
+
+  @Get('/filter')
+  @ApiOperation({ summary: 'Filtrar produtos por critérios' })
+  @ApiResponse({
+    status: 200,
+    description: 'Produtos filtrados retornados com sucesso.',
+  })
+  async filterProducts(@Query() filters: FilterProductsDto) {
+    return this.filterProductsUseCase.execute(filters);
   }
 }

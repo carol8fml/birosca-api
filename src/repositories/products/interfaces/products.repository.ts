@@ -30,4 +30,16 @@ export interface ProductsRepository {
    * @param id ID do produto
    */
   delete(id: number): Promise<void>;
+
+  /**
+   * Filtra produtos com base em critérios.
+   * @param criteria Critérios de filtro
+   */
+  filter(criteria: {
+    category?: string;
+    minQuantity?: number;
+    maxQuantity?: number;
+    minPrice?: number;
+    maxPrice?: number;
+  }): Promise<Product[]>;
 }
