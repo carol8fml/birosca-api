@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
-/** Uses Cases */
+/** Use Cases */
 import { ListProductsUseCase } from '../../usecases/products/list-products.usecase';
 import { AddProductUseCase } from '../../usecases/products/add-product.usecase';
 
@@ -32,5 +32,20 @@ export class ProductsController {
   @ApiResponse({ status: 400, description: 'Dados inválidos.' })
   async createProduct(@Body() productData: CreateProductDto) {
     return this.addProductUseCase.execute(productData);
+  }
+
+  @Post('/bulk')
+  @ApiOperation({ summary: 'Adicionar múltiplos produtos' })
+  @ApiResponse({
+    status: 201,
+    description: 'Produtos adicionados com sucesso.',
+  })
+  @ApiResponse({ status: 400, description: 'Dados inválidos.' })
+  async createMultipleProducts(@Body() productsData: CreateProductDto[]) {
+    return Promise.all(
+      productsData.map((productData) =>
+        this.addProductUseCase.execute(productData),
+      ),
+    );
   }
 }
