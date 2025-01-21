@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 /** Repository */
 import { ProductsRepository } from './interfaces/products.repository';
 
-/** Entity  */
+/** Entity */
 import { Product } from '../../entities/product.entity';
 
 /** Data */
@@ -20,195 +20,138 @@ interface ProductRow {
   quantity: number;
 }
 
+interface FilterCriteria {
+  category?: string;
+  minQuantity?: number;
+  maxQuantity?: number;
+  minPrice?: number;
+  maxPrice?: number;
+}
+
 @Injectable()
 export class SQLiteProductsRepo implements ProductsRepository {
   constructor(private readonly dbConfig: DatabaseConfig) {}
 
-  async findAll(): Promise<Product[]> {
+  /**
+   * Converte um registro do banco de dados em uma entidade `Product`.
+   * @param row O registro do banco de dados a ser convertido.
+   */
+  private mapRowToProduct(row: ProductRow): Product {
+    return new Product(row.id, row.name, row.category, row.price, row.quantity);
+  }
+
+  /**
+   * Executa uma consulta SQL genérica no banco de dados.
+   * @param query A consulta SQL a ser executada.
+   * @param params Os parâmetros da consulta.
+   */
+  private async runQuery<T>(
+    query: string,
+    params: (string | number | null)[] = [],
+  ): Promise<T> {
+    console.log('Executing Query:', query);
+    console.log('With Params:', params);
+
     const db = this.dbConfig.getDatabase();
     return new Promise((resolve, reject) => {
-      db.all('SELECT * FROM products', [], (err, rows: ProductRow[]) => {
+      db.all(query, params, (err, result) => {
         if (err) {
+          console.error('Query Error:', err);
           reject(err);
         } else {
-          const products = rows.map(
-            (row) =>
-              new Product(
-                row.id,
-                row.name,
-                row.category,
-                row.price,
-                row.quantity,
-              ),
-          );
-          resolve(products);
+          resolve(result as T);
         }
       });
     });
+  }
+
+  async findAll(): Promise<Product[]> {
+    const rows: ProductRow[] = await this.runQuery('SELECT * FROM products');
+    return rows.map(this.mapRowToProduct);
   }
 
   async findById(id: number): Promise<Product | null> {
-    const db = this.dbConfig.getDatabase();
-    return new Promise((resolve, reject) => {
-      db.get(
-        'SELECT * FROM products WHERE id = ?',
-        [id],
-        (err, row: ProductRow) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(
-              row
-                ? new Product(
-                    row.id,
-                    row.name,
-                    row.category,
-                    row.price,
-                    row.quantity,
-                  )
-                : null,
-            );
-          }
-        },
-      );
-    });
+    const query = 'SELECT * FROM products WHERE id = ?';
+    const rows: ProductRow[] = await this.runQuery(query, [id]);
+    return rows.length > 0 ? this.mapRowToProduct(rows[0]) : null;
   }
 
   async findByName(name: string): Promise<Product | null> {
-    const db = this.dbConfig.getDatabase();
-    const normalizedName = normalizeString(name); // Normaliza a entrada
-    return new Promise((resolve, reject) => {
-      db.get(
-        'SELECT * FROM products WHERE LOWER(name) = LOWER(?)',
-        [normalizedName],
-        (err, row: ProductRow) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(
-              row
-                ? new Product(
-                    row.id,
-                    row.name,
-                    row.category,
-                    row.price,
-                    row.quantity,
-                  )
-                : null,
-            );
-          }
-        },
-      );
-    });
+    const normalizedName = normalizeString(name);
+    const query = 'SELECT * FROM products WHERE LOWER(name) = LOWER(?)';
+    const rows: ProductRow[] = await this.runQuery(query, [normalizedName]);
+    return rows.length > 0 ? this.mapRowToProduct(rows[0]) : null;
   }
 
   async save(product: Product): Promise<Product> {
+    const query =
+      'INSERT INTO products (name, category, price, quantity) VALUES (?, ?, ?, ?)';
+    const params: (string | number | null)[] = [
+      normalizeString(product.name),
+      normalizeString(product.category),
+      product.price,
+      product.quantity,
+    ];
+
     const db = this.dbConfig.getDatabase();
-    return new Promise((resolve, reject) => {
-      const query =
-        'INSERT INTO products (name, category, price, quantity) VALUES (?, ?, ?, ?)';
-      db.run(
-        query,
-        [
-          normalizeString(product.name),
-          normalizeString(product.category),
-          product.price,
-          product.quantity,
-        ],
-        function (err) {
-          if (err) {
-            reject(err);
-          } else {
-            product.id = this.lastID;
-            resolve(product);
-          }
-        },
-      );
+    await new Promise((resolve, reject) => {
+      db.run(query, params, function (err) {
+        if (err) reject(err);
+        else {
+          product.id = this.lastID;
+          resolve(product);
+        }
+      });
     });
+
+    return product;
   }
 
   async update(id: number, product: Product): Promise<Product> {
-    const db = this.dbConfig.getDatabase();
-    return new Promise((resolve, reject) => {
-      const query =
-        'UPDATE products SET name = ?, category = ?, price = ?, quantity = ? WHERE id = ?';
-      db.run(
-        query,
-        [product.name, product.category, product.price, product.quantity, id],
-        (err) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(product);
-          }
-        },
-      );
-    });
+    const query =
+      'UPDATE products SET name = ?, category = ?, price = ?, quantity = ? WHERE id = ?';
+    const params: (string | number | null)[] = [
+      normalizeString(product.name),
+      normalizeString(product.category),
+      product.price,
+      product.quantity,
+      id,
+    ];
+
+    await this.runQuery(query, params);
+    return product;
   }
 
   async delete(id: number): Promise<void> {
-    const db = this.dbConfig.getDatabase();
-    return new Promise((resolve, reject) => {
-      db.run('DELETE FROM products WHERE id = ?', [id], (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
-        }
-      });
-    });
+    const query = 'DELETE FROM products WHERE id = ?';
+    await this.runQuery(query, [id]);
   }
 
-  async filter(criteria: {
-    category?: string;
-    minQuantity?: number;
-    maxQuantity?: number;
-    minPrice?: number;
-    maxPrice?: number;
-  }): Promise<Product[]> {
-    const db = this.dbConfig.getDatabase();
-    let query = `SELECT * FROM products WHERE 1=1`;
-    const params: any[] = [];
+  async filter(criteria: FilterCriteria): Promise<Product[]> {
+    const conditions: string[] = [];
+    const params: (string | number | null)[] = [];
 
-    if (criteria.category) {
-      query += ` AND LOWER(category) = LOWER(?)`;
-      params.push(normalizeString(criteria.category));
-    }
-    if (criteria.minQuantity !== undefined) {
-      query += ` AND quantity >= ?`;
-      params.push(criteria.minQuantity);
-    }
-    if (criteria.maxQuantity !== undefined) {
-      query += ` AND quantity <= ?`;
-      params.push(criteria.maxQuantity);
-    }
-    if (criteria.minPrice !== undefined) {
-      query += ` AND price >= ?`;
-      params.push(criteria.minPrice);
-    }
-    if (criteria.maxPrice !== undefined) {
-      query += ` AND price <= ?`;
-      params.push(criteria.maxPrice);
+    const filters: { [key: string]: string | number | null } = {
+      'LOWER(category) = LOWER(?)':
+        criteria.category && normalizeString(criteria.category),
+      'quantity >= ?': criteria.minQuantity,
+      'quantity <= ?': criteria.maxQuantity,
+      'price >= ?': criteria.minPrice,
+      'price <= ?': criteria.maxPrice,
+    };
+
+    for (const [condition, value] of Object.entries(filters)) {
+      if (value !== undefined) {
+        conditions.push(condition);
+        params.push(value);
+      }
     }
 
-    return new Promise((resolve, reject) => {
-      db.all(query, params, (err, rows: ProductRow[]) => {
-        if (err) {
-          reject(err);
-        } else {
-          const products = rows.map(
-            (row) =>
-              new Product(
-                row.id,
-                row.name,
-                row.category,
-                row.price,
-                row.quantity,
-              ),
-          );
-          resolve(products);
-        }
-      });
-    });
+    const query = `SELECT * FROM products WHERE 1=1 ${
+      conditions.length ? 'AND ' + conditions.join(' AND ') : ''
+    }`;
+
+    const rows: ProductRow[] = await this.runQuery(query, params);
+    return rows.map(this.mapRowToProduct);
   }
 }
