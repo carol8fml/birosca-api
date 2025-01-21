@@ -13,6 +13,12 @@ export interface ProductsRepository {
   findById(id: number): Promise<Product | null>;
 
   /**
+   * Retorna um produto pelo nome.
+   * @param name Nome do produto
+   */
+  findByName(name: string): Promise<Product | null>;
+
+  /**
    * Salva um novo produto no banco de dados.
    * @param product Instância da entidade Product
    */

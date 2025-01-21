@@ -7,8 +7,9 @@ import { ProductsController } from './api/products/products.controller';
 import { ListProductsUseCase } from './usecases/products/list-products.usecase';
 import { AddProductUseCase } from './usecases/products/add-product.usecase';
 import { FilterProductsUseCase } from './usecases/products/filter-products.usecase';
-import { ManageStockUseCase } from './usecases/products/manage-stock.usecase';
 import { DeleteProductUseCase } from './usecases/products/delete-product.usecase';
+import { GetProductByNameUseCase } from './usecases/products/get-product-by-name.usecase';
+import { UpdateProductUseCase } from './usecases/products/update-product.usecase';
 
 /** Repositories */
 import { SQLiteProductsRepo } from './repositories/products/sqlite-products.repo';
@@ -25,8 +26,9 @@ import { DatabaseConfig } from './config/database.config';
     ListProductsUseCase,
     AddProductUseCase,
     FilterProductsUseCase,
-    ManageStockUseCase,
     DeleteProductUseCase,
+    GetProductByNameUseCase,
+    UpdateProductUseCase,
   ],
 })
 export class AppModule {}

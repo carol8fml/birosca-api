@@ -70,6 +70,28 @@ export class SQLiteProductsRepo implements ProductsRepository {
       );
     });
   }
+  async findByName(name: string): Promise<Product | null> {
+    const db = this.dbConfig.getDatabase();
+    return new Promise((resolve, reject) => {
+      db.get('SELECT * FROM products WHERE name = ?', [name], (err, row) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(
+            row
+              ? new Product(
+                  (row as ProductRow).id,
+                  (row as ProductRow).name,
+                  (row as ProductRow).category,
+                  (row as ProductRow).price,
+                  (row as ProductRow).quantity,
+                )
+              : null,
+          );
+        }
+      });
+    });
+  }
 
   async save(product: Product): Promise<Product> {
     const db = this.dbConfig.getDatabase();

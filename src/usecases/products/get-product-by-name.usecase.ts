@@ -3,14 +3,17 @@ import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 /** Repositories */
 import { ProductsRepository } from '../../repositories/products/interfaces/products.repository';
 
+/** Entities */
+import { Product } from '../../entities/product.entity';
+
 @Injectable()
-export class DeleteProductUseCase {
+export class GetProductByNameUseCase {
   constructor(
     @Inject('ProductsRepository')
     private readonly productsRepo: ProductsRepository,
   ) {}
 
-  async execute(productName: string): Promise<string> {
+  async execute(productName: string): Promise<Product> {
     const product = await this.productsRepo.findByName(productName);
 
     if (!product) {
@@ -19,8 +22,6 @@ export class DeleteProductUseCase {
       );
     }
 
-    await this.productsRepo.delete(product.id);
-
-    return product.name;
+    return product;
   }
 }

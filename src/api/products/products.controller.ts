@@ -4,11 +4,10 @@ import {
   Post,
   Body,
   Query,
-  Patch,
   Param,
-  ParseIntPipe,
   Delete,
   HttpCode,
+  Put,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
@@ -16,13 +15,17 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ListProductsUseCase } from '../../usecases/products/list-products.usecase';
 import { AddProductUseCase } from '../../usecases/products/add-product.usecase';
 import { FilterProductsUseCase } from '../../usecases/products/filter-products.usecase';
-import { ManageStockUseCase } from '../../usecases/products/manage-stock.usecase';
 import { DeleteProductUseCase } from '../../usecases/products/delete-product.usecase';
+import { UpdateProductUseCase } from '../../usecases/products/update-product.usecase';
+import { GetProductByNameUseCase } from '../../usecases/products/get-product-by-name.usecase';
 
 /** DTOs */
 import { CreateProductDto } from './dto/create-product.dto';
 import { FilterProductsDto } from './dto/filter-products.dto';
-import { UpdateStockDto } from './dto/update-stock.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
+
+/** Entities */
+import { Product } from '../../entities/product.entity';
 
 @Controller('products')
 @ApiTags('Products')
@@ -31,8 +34,9 @@ export class ProductsController {
     private readonly listProductsUseCase: ListProductsUseCase,
     private readonly addProductUseCase: AddProductUseCase,
     private readonly filterProductsUseCase: FilterProductsUseCase,
-    private readonly manageStockUseCase: ManageStockUseCase,
     private readonly deleteProductUseCase: DeleteProductUseCase,
+    private readonly updateProductUseCase: UpdateProductUseCase,
+    private readonly getProductByNameUseCase: GetProductByNameUseCase,
   ) {}
 
   @Get()
@@ -78,48 +82,41 @@ export class ProductsController {
     return this.filterProductsUseCase.execute(filters);
   }
 
-  @Patch(':id/stock/add')
-  @ApiOperation({ summary: 'Aumentar o estoque de um produto' })
-  @ApiResponse({
-    status: 200,
-    description: 'Quantidade adicionada ao estoque com sucesso.',
-  })
-  @ApiResponse({ status: 404, description: 'Produto não encontrado.' })
-  async addStock(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() body: UpdateStockDto,
-  ) {
-    return this.manageStockUseCase.execute(id, body.quantityChange);
-  }
-
-  @Patch(':id/stock/remove')
-  @ApiOperation({ summary: 'Diminuir o estoque de um produto' })
-  @ApiResponse({
-    status: 200,
-    description: 'Quantidade removida do estoque com sucesso.',
-  })
-  @ApiResponse({ status: 404, description: 'Produto não encontrado.' })
-  @ApiResponse({
-    status: 400,
-    description: 'Quantidade em estoque insuficiente.',
-  })
-  async removeStock(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() body: UpdateStockDto,
-  ) {
-    return this.manageStockUseCase.execute(id, -body.quantityChange);
-  }
-
-  @Delete(':id')
+  @Delete(':name')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Deletar um produto por ID' })
+  @ApiOperation({ summary: 'Deletar um produto por nome' })
   @ApiResponse({ status: 200, description: 'Produto deletado com sucesso.' })
   @ApiResponse({ status: 404, description: 'Produto não encontrado.' })
   async deleteProduct(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('name') name: string,
   ): Promise<{ message: string }> {
-    const productName = await this.deleteProductUseCase.execute(id);
+    const productName = await this.deleteProductUseCase.execute(name);
 
     return { message: `O produto "${productName}" foi deletado com sucesso.` };
+  }
+
+  @Put(':name')
+  @ApiOperation({ summary: 'Atualizar um produto por nome' })
+  @ApiResponse({
+    status: 200,
+    description: 'Produto atualizado com sucesso.',
+  })
+  @ApiResponse({ status: 404, description: 'Produto não encontrado.' })
+  async updateProduct(
+    @Param('name') name: string,
+    @Body() updateData: UpdateProductDto,
+  ): Promise<Product> {
+    return this.updateProductUseCase.execute(name, updateData);
+  }
+
+  @Get(':name')
+  @ApiOperation({ summary: 'Obter um produto por nome' })
+  @ApiResponse({
+    status: 200,
+    description: 'Produto retornado com sucesso.',
+  })
+  @ApiResponse({ status: 404, description: 'Produto não encontrado.' })
+  async getProductByName(@Param('name') name: string): Promise<Product> {
+    return this.getProductByNameUseCase.execute(name);
   }
 }
