@@ -7,6 +7,8 @@ import {
   Patch,
   Param,
   ParseIntPipe,
+  Delete,
+  HttpCode,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
@@ -15,6 +17,7 @@ import { ListProductsUseCase } from '../../usecases/products/list-products.useca
 import { AddProductUseCase } from '../../usecases/products/add-product.usecase';
 import { FilterProductsUseCase } from '../../usecases/products/filter-products.usecase';
 import { ManageStockUseCase } from '../../usecases/products/manage-stock.usecase';
+import { DeleteProductUseCase } from '../../usecases/products/delete-product.usecase';
 
 /** DTOs */
 import { CreateProductDto } from './dto/create-product.dto';
@@ -29,6 +32,7 @@ export class ProductsController {
     private readonly addProductUseCase: AddProductUseCase,
     private readonly filterProductsUseCase: FilterProductsUseCase,
     private readonly manageStockUseCase: ManageStockUseCase,
+    private readonly deleteProductUseCase: DeleteProductUseCase,
   ) {}
 
   @Get()
@@ -104,5 +108,18 @@ export class ProductsController {
     @Body() body: UpdateStockDto,
   ) {
     return this.manageStockUseCase.execute(id, -body.quantityChange);
+  }
+
+  @Delete(':id')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Deletar um produto por ID' })
+  @ApiResponse({ status: 200, description: 'Produto deletado com sucesso.' })
+  @ApiResponse({ status: 404, description: 'Produto não encontrado.' })
+  async deleteProduct(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<{ message: string }> {
+    const productName = await this.deleteProductUseCase.execute(id);
+
+    return { message: `O produto "${productName}" foi deletado com sucesso.` };
   }
 }

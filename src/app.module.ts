@@ -8,6 +8,7 @@ import { ListProductsUseCase } from './usecases/products/list-products.usecase';
 import { AddProductUseCase } from './usecases/products/add-product.usecase';
 import { FilterProductsUseCase } from './usecases/products/filter-products.usecase';
 import { ManageStockUseCase } from './usecases/products/manage-stock.usecase';
+import { DeleteProductUseCase } from './usecases/products/delete-product.usecase';
 
 /** Repositories */
 import { SQLiteProductsRepo } from './repositories/products/sqlite-products.repo';
@@ -25,6 +26,7 @@ import { DatabaseConfig } from './config/database.config';
     AddProductUseCase,
     FilterProductsUseCase,
     ManageStockUseCase,
+    DeleteProductUseCase,
   ],
 })
 export class AppModule {}
