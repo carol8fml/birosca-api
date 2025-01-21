@@ -9,6 +9,9 @@ import { Product } from '../../entities/product.entity';
 /** Data */
 import { DatabaseConfig } from '../../config/database.config';
 
+/** Utils */
+import { normalizeString } from 'src/utils/string.utils';
+
 interface ProductRow {
   id: number;
   name: string;
@@ -70,26 +73,32 @@ export class SQLiteProductsRepo implements ProductsRepository {
       );
     });
   }
+
   async findByName(name: string): Promise<Product | null> {
     const db = this.dbConfig.getDatabase();
+    const normalizedName = normalizeString(name); // Normaliza a entrada
     return new Promise((resolve, reject) => {
-      db.get('SELECT * FROM products WHERE name = ?', [name], (err, row) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(
-            row
-              ? new Product(
-                  (row as ProductRow).id,
-                  (row as ProductRow).name,
-                  (row as ProductRow).category,
-                  (row as ProductRow).price,
-                  (row as ProductRow).quantity,
-                )
-              : null,
-          );
-        }
-      });
+      db.get(
+        'SELECT * FROM products WHERE LOWER(name) = LOWER(?)',
+        [normalizedName],
+        (err, row: ProductRow) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(
+              row
+                ? new Product(
+                    row.id,
+                    row.name,
+                    row.category,
+                    row.price,
+                    row.quantity,
+                  )
+                : null,
+            );
+          }
+        },
+      );
     });
   }
 
@@ -100,7 +109,12 @@ export class SQLiteProductsRepo implements ProductsRepository {
         'INSERT INTO products (name, category, price, quantity) VALUES (?, ?, ?, ?)';
       db.run(
         query,
-        [product.name, product.category, product.price, product.quantity],
+        [
+          normalizeString(product.name),
+          normalizeString(product.category),
+          product.price,
+          product.quantity,
+        ],
         function (err) {
           if (err) {
             reject(err);
@@ -157,8 +171,8 @@ export class SQLiteProductsRepo implements ProductsRepository {
     const params: any[] = [];
 
     if (criteria.category) {
-      query += ` AND category = ?`;
-      params.push(criteria.category);
+      query += ` AND LOWER(category) = LOWER(?)`;
+      params.push(normalizeString(criteria.category));
     }
     if (criteria.minQuantity !== undefined) {
       query += ` AND quantity >= ?`;
@@ -178,18 +192,18 @@ export class SQLiteProductsRepo implements ProductsRepository {
     }
 
     return new Promise((resolve, reject) => {
-      db.all(query, params, (err, rows) => {
+      db.all(query, params, (err, rows: ProductRow[]) => {
         if (err) {
           reject(err);
         } else {
           const products = rows.map(
             (row) =>
               new Product(
-                (row as ProductRow).id,
-                (row as ProductRow).name,
-                (row as ProductRow).category,
-                (row as ProductRow).price,
-                (row as ProductRow).quantity,
+                row.id,
+                row.name,
+                row.category,
+                row.price,
+                row.quantity,
               ),
           );
           resolve(products);

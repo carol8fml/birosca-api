@@ -1,4 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { IsOptional, IsString, IsNumber, Min } from 'class-validator';
 
 export class FilterProductsDto {
@@ -8,6 +9,7 @@ export class FilterProductsDto {
   })
   @IsOptional()
   @IsString()
+  @Transform(({ value }) => value?.trim().toLowerCase())
   category?: string;
 
   @ApiPropertyOptional({
