@@ -3,8 +3,8 @@ import { Injectable, Inject } from '@nestjs/common';
 /** Repositories */
 import { ProductsRepository } from '../../repositories/products/interfaces/products.repository';
 
-/** Entities */
-import { Product } from '../../entities/product.entity';
+/** Utils */
+import { createPaginatedResult } from 'src/common/pagination.utils';
 
 @Injectable()
 export class ListProductsUseCase {
@@ -13,7 +13,10 @@ export class ListProductsUseCase {
     private readonly productsRepo: ProductsRepository,
   ) {}
 
-  async execute(): Promise<Product[]> {
-    return this.productsRepo.findAll();
+  async execute(page: number = 1, limit: number = 10) {
+    const total = await this.productsRepo.countAll();
+    const data = await this.productsRepo.findAll(page, limit);
+
+    return createPaginatedResult(data, total, page, limit);
   }
 }

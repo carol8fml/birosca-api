@@ -10,7 +10,7 @@ import { Product } from '../../entities/product.entity';
 import { DatabaseConfig } from '../../config/database.config';
 
 /** Utils */
-import { normalizeString } from 'src/utils/string.utils';
+import { normalizeString } from 'src/common/string.utils';
 
 interface ProductRow {
   id: number;
@@ -65,9 +65,18 @@ export class SQLiteProductsRepo implements ProductsRepository {
     });
   }
 
-  async findAll(): Promise<Product[]> {
-    const rows: ProductRow[] = await this.runQuery('SELECT * FROM products');
+  async findAll(page: number = 1, limit: number = 10): Promise<Product[]> {
+    const offset = (page - 1) * limit;
+    const query = `SELECT * FROM products LIMIT ? OFFSET ?`;
+
+    const rows: ProductRow[] = await this.runQuery(query, [limit, offset]);
     return rows.map(this.mapRowToProduct);
+  }
+
+  async countAll(): Promise<number> {
+    const query = `SELECT COUNT(*) as total FROM products`;
+    const result = await this.runQuery<{ total: number }[]>(query);
+    return result[0]?.total || 0;
   }
 
   async findById(id: number): Promise<Product | null> {

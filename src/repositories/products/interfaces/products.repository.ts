@@ -3,8 +3,15 @@ import { Product } from '../../../entities/product.entity';
 export interface ProductsRepository {
   /**
    * Retorna todos os produtos.
+   * @param page Página atual.
+   * @param limit Quantidade de itens por página (opcional).
    */
-  findAll(): Promise<Product[]>;
+  findAll(page?: number, limit?: number): Promise<Product[]>;
+
+  /**
+   * Retorna o número total de produtos no banco de dados.
+   */
+  countAll(): Promise<number>;
 
   /**
    * Retorna um produto pelo ID.

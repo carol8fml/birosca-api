@@ -22,7 +22,8 @@ import { GetProductByNameUseCase } from '../../usecases/products/get-product-by-
 /** DTOs */
 import { CreateProductDto } from './dto/create-product.dto';
 import { FilterProductsDto } from './dto/filter-products.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
+import { UpdateProductDto } from './dto/update-products.dto';
+import { ListProductsDto } from './dto/list-products.dto';
 
 /** Entities */
 import { Product } from '../../entities/product.entity';
@@ -40,13 +41,14 @@ export class ProductsController {
   ) {}
 
   @Get()
-  @ApiOperation({ summary: 'Listar todos os produtos' })
+  @ApiOperation({ summary: 'Listar todos os produtos com paginação' })
   @ApiResponse({
     status: 200,
     description: 'Lista de produtos retornada com sucesso.',
   })
-  async getAllProducts() {
-    return this.listProductsUseCase.execute();
+  async getAllProducts(@Query() pagination: ListProductsDto) {
+    const { page, limit } = pagination;
+    return this.listProductsUseCase.execute(page, limit);
   }
 
   @Post()
