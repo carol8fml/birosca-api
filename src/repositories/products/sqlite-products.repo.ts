@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 
-/** Repository */
+/** Repositories */
 import { ProductsRepository } from './interfaces/products.repository';
 
-/** Entity */
+/** entities */
 import { Product } from '../../entities/product.entity';
 
 /** Data */
