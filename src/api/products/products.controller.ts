@@ -9,7 +9,7 @@ import {
   HttpCode,
   Put,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 
 /** Use Cases */
 import { ListProductsUseCase } from '../../usecases/products/list-products.usecase';
@@ -41,10 +41,11 @@ export class ProductsController {
   ) {}
 
   @Get()
-  @ApiOperation({ summary: 'Listar todos os produtos com paginação' })
+  @ApiOperation({ summary: 'Obter lista de produtos' })
   @ApiResponse({
     status: 200,
-    description: 'Lista de produtos retornada com sucesso.',
+    description:
+      'Retornou a lista de produtos com base na paginação fornecida.',
   })
   async getAllProducts(@Query() pagination: ListProductsDto) {
     const { page, limit } = pagination;
@@ -52,20 +53,40 @@ export class ProductsController {
   }
 
   @Post()
-  @ApiOperation({ summary: 'Adicionar um produto' })
-  @ApiResponse({ status: 201, description: 'Produto adicionado com sucesso.' })
-  @ApiResponse({ status: 400, description: 'Dados inválidos.' })
+  @ApiOperation({ summary: 'Adicionar um novo produto' })
+  @ApiResponse({
+    status: 201,
+    description: 'Adicionou o produto com sucesso.',
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Alguns dos dados enviados estavam incorretos. A solicitação foi rejeitada.',
+  })
+  @ApiBody({
+    description: 'Informações do produto a ser adicionado.',
+    type: CreateProductDto,
+  })
   async createProduct(@Body() productData: CreateProductDto) {
     return this.addProductUseCase.execute(productData);
   }
 
   @Post('/bulk')
-  @ApiOperation({ summary: 'Adicionar múltiplos produtos' })
+  @ApiOperation({ summary: 'Adicionar vários produtos ao mesmo tempo' })
   @ApiResponse({
     status: 201,
-    description: 'Produtos adicionados com sucesso.',
+    description: 'Adicionou os produtos com sucesso.',
   })
-  @ApiResponse({ status: 400, description: 'Dados inválidos.' })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Alguns ou todos os produtos possuíam dados inválidos. A solicitação foi rejeitada.',
+  })
+  @ApiBody({
+    description:
+      'Envie um array com as informações de cada produto. Todos devem seguir o formato do DTO de criação.',
+    type: [CreateProductDto],
+  })
   async createMultipleProducts(@Body() productsData: CreateProductDto[]) {
     return Promise.all(
       productsData.map((productData) =>
@@ -75,10 +96,15 @@ export class ProductsController {
   }
 
   @Get('/filter')
-  @ApiOperation({ summary: 'Filtrar produtos por critérios' })
+  @ApiOperation({ summary: 'Buscar produtos com filtros' })
   @ApiResponse({
     status: 200,
-    description: 'Produtos filtrados retornados com sucesso.',
+    description: 'Retornou os produtos que atendem aos filtros aplicados.',
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Os parâmetros enviados para o filtro estavam inválidos. A solicitação foi rejeitada.',
   })
   async filterProducts(@Query() filters: FilterProductsDto) {
     return this.filterProductsUseCase.execute(filters);
@@ -86,24 +112,42 @@ export class ProductsController {
 
   @Delete(':name')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Deletar um produto por nome' })
-  @ApiResponse({ status: 200, description: 'Produto deletado com sucesso.' })
-  @ApiResponse({ status: 404, description: 'Produto não encontrado.' })
+  @ApiOperation({ summary: 'Remover um produto pelo nome' })
+  @ApiResponse({
+    status: 200,
+    description: 'Removeu o produto com sucesso.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'O produto com o nome especificado não foi encontrado.',
+  })
   async deleteProduct(
     @Param('name') name: string,
   ): Promise<{ message: string }> {
     const productName = await this.deleteProductUseCase.execute(name);
 
-    return { message: `O produto "${productName}" foi deletado com sucesso.` };
+    return { message: `O produto "${productName}" foi removido com sucesso.` };
   }
 
   @Put(':name')
-  @ApiOperation({ summary: 'Atualizar um produto por nome' })
+  @ApiOperation({ summary: 'Atualizar informações de um produto' })
   @ApiResponse({
     status: 200,
-    description: 'Produto atualizado com sucesso.',
+    description: 'Atualizou as informações do produto com sucesso.',
   })
-  @ApiResponse({ status: 404, description: 'Produto não encontrado.' })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Os dados enviados para atualização estavam incorretos. A solicitação foi rejeitada.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'O produto com o nome especificado não foi encontrado.',
+  })
+  @ApiBody({
+    description: 'Dados atualizados para o produto.',
+    type: UpdateProductDto,
+  })
   async updateProduct(
     @Param('name') name: string,
     @Body() updateData: UpdateProductDto,
@@ -112,12 +156,15 @@ export class ProductsController {
   }
 
   @Get(':name')
-  @ApiOperation({ summary: 'Obter um produto por nome' })
+  @ApiOperation({ summary: 'Buscar informações de um produto pelo nome' })
   @ApiResponse({
     status: 200,
-    description: 'Produto retornado com sucesso.',
+    description: 'Retornou as informações do produto solicitado.',
   })
-  @ApiResponse({ status: 404, description: 'Produto não encontrado.' })
+  @ApiResponse({
+    status: 404,
+    description: 'O produto com o nome especificado não foi encontrado.',
+  })
   async getProductByName(@Param('name') name: string): Promise<Product> {
     return this.getProductByNameUseCase.execute(name);
   }
